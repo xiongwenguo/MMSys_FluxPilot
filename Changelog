@@ -1,0 +1,11 @@
+version 0.6  [April 13] update MPD SDK lib. Add peer id as the suffix of trace file name.
+
+version 0.5  [April 3] update MPD SDK lib. Fix potentially crash when integrated with online test platform. Update score module.
+
+version 0.4  [Mar 17] update MPD SDK lib to fix some bugs, add score trace, update get_score start time
+
+version 0.3: [Mar 2 ] update MPD SDK lib to fix some bugs, add support for apple chips and update readme. Note that 0.3 is only compatible with previous version in API, but lib file has been changed.
+
+version 0.2: [Feb 24] update tools/get_score.py to support beta calculation w/o video player input
+
+version 0.1: [Feb 21] initial public release
