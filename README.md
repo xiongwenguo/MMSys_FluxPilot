@@ -1,2 +1,2 @@
-Please refer to readme.pdf for details. 
+第一次迭代
  
