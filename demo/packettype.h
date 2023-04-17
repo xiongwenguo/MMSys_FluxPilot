@@ -10,17 +10,17 @@ using DataNumber = int32_t;
 
 struct DataPacket
 {
-    SeqNumber seq{MAX_SEQNUMBER};
-    DataNumber pieceId{MAX_DATANUMBER};
+    SeqNumber seq{ MAX_SEQNUMBER };
+    DataNumber pieceId{ MAX_DATANUMBER };
 
     virtual ~DataPacket() = default;
 };
 
 struct InflightPacket : DataPacket
 {
-    Timepoint sendtic{Timepoint::Zero()};
+    Timepoint sendtic{ Timepoint::Zero() };
 
-    friend std::ostream &operator<<(std::ostream &os, const InflightPacket &pkt)
+    friend std::ostream& operator<<(std::ostream& os, const InflightPacket& pkt)
     {
         os << "{ seq: " << pkt.seq << " piceId: " << pkt.pieceId << " sendtic: " << pkt.sendtic << " }";
         return os;
@@ -40,12 +40,12 @@ struct InflightPacket : DataPacket
 
 struct AckedPacket : InflightPacket
 {
-    Timepoint recvtic{Timepoint::Zero()};
+    Timepoint recvtic{ Timepoint::Zero() };
 
-    friend std::ostream &operator<<(std::ostream &os, const AckedPacket &pkt)
+    friend std::ostream& operator<<(std::ostream& os, const AckedPacket& pkt)
     {
-        os << "{ seq: " << pkt.seq << " piceId: " << pkt.pieceId << " sendtic: " << pkt.sendtic << "recvtic: "
-           << " }";
+        os << "{ seq: " << pkt.seq << " piceId: " << pkt.pieceId <<
+           " sendtic: " << pkt.sendtic << "recvtic: " << " }";
         return os;
     }
 
@@ -64,13 +64,13 @@ struct AckedPacket : InflightPacket
 class InFlightPacketMap
 {
 public:
-    void AddSentPacket(DataPacket &p, QuicTime sendtic)
+    void AddSentPacket(DataPacket& p, QuicTime sendtic)
     {
         InflightPacket inflightPacket;
         inflightPacket.seq = p.seq;
         inflightPacket.pieceId = p.pieceId;
         inflightPacket.sendtic = sendtic;
-        auto &&itor_pair = inflightPktMap.emplace(std::make_pair(p.seq, p.pieceId), inflightPacket);
+        auto&& itor_pair = inflightPktMap.emplace(std::make_pair(p.seq, p.pieceId), inflightPacket);
         if (!itor_pair.second)
         {
             SPDLOG_WARN("insert failed with seq = {},duplicate pkt?", p.seq);
@@ -82,20 +82,20 @@ public:
                 maxSeqInflightPkt = inflightPacket;
             }
             SPDLOG_DEBUG("Add pkt with seq = {}, max inflight {}, max acked {}", p.seq,
-                         MaxSeqInflightPkt().DebugInfo(), MaxSeqAckedPkt().DebugInfo());
+                    MaxSeqInflightPkt().DebugInfo(), MaxSeqAckedPkt().DebugInfo());
         }
 
         SPDLOG_TRACE("Sent seq:{}, map now:{}", p.seq, DebugInfo());
     }
 
-    void OnPacktReceived(InflightPacket &p, QuicTime recvtic)
+    void OnPacktReceived(InflightPacket& p, QuicTime recvtic)
     {
-        auto &&itor = inflightPktMap.find(std::make_pair(p.seq, p.pieceId));
+        auto&& itor = inflightPktMap.find(std::make_pair(p.seq, p.pieceId));
         if (itor != inflightPktMap.end())
         {
             inflightPktMap.erase(std::make_pair(p.seq, p.pieceId));
             SPDLOG_DEBUG("recv pkt with seq = {}, max inflight {}, max acked {}", p.seq,
-                         MaxSeqInflightPkt().DebugInfo(), MaxSeqAckedPkt().DebugInfo());
+                    MaxSeqInflightPkt().DebugInfo(), MaxSeqAckedPkt().DebugInfo());
             if (p.seq > maxSeqAckPkt.seq)
             {
                 AckedPacket ackpkt;
@@ -111,18 +111,19 @@ public:
             SPDLOG_WARN("Receive a pkt with unknown seq {}", p.seq);
         }
 
+
         SPDLOG_TRACE("Recv seq:{}, map now:{}", p.seq, DebugInfo());
     }
 
     // packet is marked as lost
-    void RemoveFromInFlight(InflightPacket &p)
+    void RemoveFromInFlight(InflightPacket& p)
     {
-        auto &&itor = inflightPktMap.find(std::make_pair(p.seq, p.pieceId));
+        auto&& itor = inflightPktMap.find(std::make_pair(p.seq, p.pieceId));
         if (itor != inflightPktMap.end())
         {
             inflightPktMap.erase(std::make_pair(p.seq, p.pieceId));
             SPDLOG_DEBUG("remove pkt with seq = {}, max inflight {}, max acked {}", p.seq,
-                         MaxSeqInflightPkt().DebugInfo(), MaxSeqAckedPkt().DebugInfo());
+                    MaxSeqInflightPkt().DebugInfo(), MaxSeqAckedPkt().DebugInfo());
         }
         else
         {
@@ -149,17 +150,18 @@ public:
         return maxSeqAckPkt;
     }
 
+
     /// return <true,found pkt> or <false,InflightPacket()>
     std::pair<bool, InflightPacket> PktIsInFlight(SeqNumber seq, DataNumber dataid = MAX_DATANUMBER)
     {
         std::pair<bool, InflightPacket> rt = std::make_pair(false, InflightPacket());
-        const auto &itor = inflightPktMap.find(std::make_pair(seq, dataid));
+        const auto& itor = inflightPktMap.find(std::make_pair(seq, dataid));
         if (itor != inflightPktMap.end())
         {
             if (dataid != MAX_DATANUMBER && dataid != itor->second.pieceId)
             {
                 SPDLOG_WARN("seq {} found, but data id is different. Input dataid: {}, found dataid:{}",
-                            seq, dataid, itor->second.pieceId);
+                        seq, dataid, itor->second.pieceId);
             }
             rt.first = true;
             rt.second = itor->second;
@@ -167,27 +169,26 @@ public:
         SPDLOG_TRACE("seq:{}", seq);
         return rt;
     }
-    // By GXW:
-    std::pair<bool, DataNumber> FindInFlightPktDataNum(SeqNumber seq)
+
+
+    bool FindPktInFlight(DataNumber pno, QuicTime & sendtic)
     {
-        std::pair<bool,DataNumber> rt = std::make_pair(false,-1);
-        for(auto itor=inflightPktMap.begin();itor!=inflightPktMap.end();itor++)
+        
+        for(auto it=inflightPktMap.begin();it!=inflightPktMap.end();it++)
         {
-            if(itor->first.first==seq)
+            if(it->first.second==pno)
             {
-                rt.first=true;
-                rt.second=itor->first.second;
-                break;
+                sendtic = it->second.sendtic;
+                return true;
             }
         }
-        return rt;
+        return false;
     }
-
     std::string DebugInfo() const
     {
         std::stringstream ss;
         ss << " { ";
-        for (const auto &itor : inflightPktMap)
+        for (const auto& itor: inflightPktMap)
         {
             ss << itor.second;
         }

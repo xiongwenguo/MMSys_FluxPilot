@@ -32,7 +32,7 @@ namespace basefw
                   smoothed_rtt_(QuicTime::Delta::Zero()),
                   previous_srtt_(QuicTime::Delta::Zero()),
                   mean_deviation_(QuicTime::Delta::Zero()),
-                  calculate_standard_deviation_(false),
+                  calculate_standard_deviation_(true),
                   initial_rtt_(QuicTime::Delta::FromMilliseconds(kInitialRttMs)),
                   last_update_time_(QuicTime::Zero())
         {
